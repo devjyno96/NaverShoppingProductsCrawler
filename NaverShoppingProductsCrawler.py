@@ -4,7 +4,7 @@ from urllib.parse import  urlparse
 import time
 
 
-class NaverShoppingProductCrawler :
+class ProductCrawler :
     driver = None
 
     def __init__(self):
@@ -16,7 +16,7 @@ class NaverShoppingProductCrawler :
         self.driver.close()
 
     def getProducts(self, soup):
-        return soup.find_all(class_="_model_list _itemSection")
+        return soup.find_all(class_="_itemSection")
 
     def getNv_mids(self, soup):
         nv_mid = []
@@ -36,7 +36,7 @@ class NaverShoppingProductCrawler :
     def getDates(self, soup):
         dates = []
         for product in soup :
-            dates.append(product.find(class_="date").text)
+            dates.append(product.find(class_="date").text[4:]) #등록일 분자열 제거
 
         return dates
 
@@ -50,7 +50,7 @@ class NaverShoppingProductCrawler :
     def getProductImgsUrl(self, soup):
         imgs = []
         for product in soup :
-            imgs.append(product.find(class_="_productLazyImg")['src'])
+            imgs.append(product.find(class_="_productLazyImg")['data-original'])
 
         return imgs
 
@@ -58,10 +58,12 @@ class NaverShoppingProductCrawler :
     def setProductSort(self):
         self.driver.find_element_by_css_selector("#_sort_review").click() # 리뷰 많은순
         # self.driver.find_element_by_css_selector("#_sort_date").click() # 등록일순
+        time.sleep(2)
 
     def goPage(self, pageindex):
         # self.driver.execute_script("shop.detail.ReviewHandler.page(" + str(i) + ", '_review_paging');")
         self.driver.execute_script("shop.search.loader.goPage(" + str(pageindex) + ", '_result_paging');")
+        time.sleep(2) # 이미지 로딩 대기
 
     def getUrlParsed(self, URL):
         url = urlparse(URL)
@@ -89,25 +91,24 @@ class NaverShoppingProductCrawler :
 
             if page != pageIndex :
                 self.goPage(page)
-                time.sleep(1)
 
 
         return nv_mids, names, prices, dates, img_urls
 
-    def getCrawlling(self, cat_id):
+    def getCrawlling(self, cat_id, pagecount = None):
         URL = "https://search.shopping.naver.com/search/category.nhn?cat_id=" + cat_id
 
         self.driver.get(URL)
         self.setProductSort() #리뷰 많은순 정렬
-        time.sleep(1) #이미지 로딩 대기
+        time.sleep(2) #이미지 로딩 대기
 
         response = self.driver.page_source.encode('utf-8')
         soup = BeautifulSoup(response, 'lxml')
 
-        return self.getContext(soup)
+        return self.getContext(soup, pagecount)
 
 if __name__ == "__main__" :
-    crawler = NaverShoppingProductCrawler()
+    crawler = ProductCrawler()
     print(crawler.getCrawlling("50001203"))
     time.sleep(10)
 
