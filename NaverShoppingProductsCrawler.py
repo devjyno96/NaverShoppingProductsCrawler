@@ -68,16 +68,35 @@ class NaverShoppingProductCrawler :
         return url.query.split("&")[0].split("=")[1]  # nvMid 값을 추출함
 
 
-    def getContext(self, soup) :
-        products = self.getProducts(soup)
-        self.getNv_mids(products)
-        # self.goPage(2)
-        print(self.getProductNames(products))
-        print(self.getPrices(products))
-        print(self.getDates(products))
-        print(self.getProductImgsUrl(products))
+    def getContext(self, soup, pageIndex = None) :
+        if pageIndex is None :
+            pageIndex = 3
 
-    def getCrawlling(self, URL):
+        nv_mids, names, prices, dates, img_urls = [], [], [], [], []
+
+        for page in range(1, pageIndex+1):
+
+            response = self.driver.page_source.encode('utf-8')
+            soup = BeautifulSoup(response, 'lxml')
+
+            products = self.getProducts(soup) # get review divs
+
+            nv_mids += self.getNv_mids(products)
+            names += self.getProductNames(products)
+            prices += self.getPrices(products)
+            dates += self.getDates(products)
+            img_urls += self.getProductImgsUrl(products)
+
+            if page != pageIndex :
+                self.goPage(page)
+                time.sleep(1)
+
+
+        return nv_mids, names, prices, dates, img_urls
+
+    def getCrawlling(self, cat_id):
+        URL = "https://search.shopping.naver.com/search/category.nhn?cat_id=" + cat_id
+
         self.driver.get(URL)
         self.setProductSort() #리뷰 많은순 정렬
         time.sleep(1) #이미지 로딩 대기
@@ -85,10 +104,10 @@ class NaverShoppingProductCrawler :
         response = self.driver.page_source.encode('utf-8')
         soup = BeautifulSoup(response, 'lxml')
 
-        self.getContext(soup)
+        return self.getContext(soup)
 
 if __name__ == "__main__" :
     crawler = NaverShoppingProductCrawler()
-    crawler.getCrawlling("https://search.shopping.naver.com/search/category.nhn?cat_id=50001203")
+    print(crawler.getCrawlling("50001203"))
     time.sleep(10)
 
