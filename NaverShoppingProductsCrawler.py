@@ -16,7 +16,7 @@ class ProductCrawler :
         self.driver.close()
 
     def getProducts(self, soup):
-        return soup.find_all(class_="_itemSection")
+        return soup.find_all(class_="_model_list _itemSection")
 
     def getNv_mids(self, soup):
         nv_mid = []
@@ -43,7 +43,16 @@ class ProductCrawler :
     def getPrices(self, soup):
         nv_mid = []
         for product in soup :
-            nv_mid.append(product.find(class_="num _price_reload").text)
+            try :
+                price_text = product.find(class_="num _price_reload").text
+                price_text = str(price_text).replace(",", "")
+            except AttributeError as e :
+                price_text = "판매 중지"
+                print(e)
+                nv_mid.append(price_text)
+                continue
+
+            nv_mid.append(price_text)
 
         return nv_mid
 
